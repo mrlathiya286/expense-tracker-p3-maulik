@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const generateToken = require("../utils/generateToken");
+const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
   const { username, email, password } = req.body;
@@ -24,32 +25,24 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+
+  console.log("Login attempt:", { email }); // Log the email being used for login
+
   try {
-    console.log("Received login request for email:", email);
     const user = await User.findOne({ email });
-    console.log("User found:", user);
 
-    if (user) {
-      console.log("Stored password:", user.password);
-      const isMatch = await bcrypt.compare(password, user.password);
-      console.log("Password match:", isMatch);
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: "30d",
+      });
 
-      if (isMatch) {
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-          expiresIn: "30d",
-        });
-        res.json({
-          token,
-          user: { username: user.username, email: user.email },
-        });
-      } else {
-        res.status(401).json({ message: "Invalid email or password" });
-      }
+      res.json({ token, user: { username: user.username, email: user.email } });
     } else {
+      console.log("Invalid email or password"); // Log invalid login
       res.status(401).json({ message: "Invalid email or password" });
     }
   } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "An error occurred during login." });
+    console.error("Login error:", error); // Log the error message
+    res.status(500).json({ message: error.message });
   }
 };

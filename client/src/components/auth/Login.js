@@ -13,17 +13,13 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Email:", email, "Password:", password);
     try {
       localStorage.setItem("userEmail", email);
       await dispatch(login({ email, password })).unwrap();
       navigate("/dashboard");
     } catch (err) {
-      console.error("Login error:", err);
-      const errorMessage =
-        err.response?.data?.message ||
-        "Login failed! Please check your credentials.";
-      setError(errorMessage);
+      console.error("Login Error:", err); // Log the entire error object for debugging
+      setError(err.message || "Login failed! Please check your credentials."); // Display the error message if available
     }
   };
 
